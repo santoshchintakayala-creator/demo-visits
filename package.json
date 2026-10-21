@@ -1,0 +1,13 @@
+{
+  "name": "demo-visits",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tracks who opens the website demos you send to prospects, and from where.",
+  "scripts": {
+    "build": "node -e \"console.log('No build step: static dashboard in public/, functions in api/')\"",
+    "dev": "node dev.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

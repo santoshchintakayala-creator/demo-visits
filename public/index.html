@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Demo Visits</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a56db'/%3E%3Cpath d='M9 22V10h6.5a6 6 0 0 1 0 12z' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <form class="login-card" id="login-form">
+    <div class="brand"><span class="logo">D</span> Demo Visits</div>
+    <h1>Sign in</h1>
+    <p class="muted">See who opened the website demos you sent, and from where.</p>
+    <label>Password<input type="password" name="password" autocomplete="current-password" required autofocus></label>
+    <p class="error" id="login-error" role="alert"></p>
+    <button class="btn primary" type="submit">Sign in</button>
+  </form>
+</div>
+
+<div id="setup" class="login" hidden>
+  <div class="login-card">
+    <div class="brand"><span class="logo">D</span> Demo Visits</div>
+    <h1>Almost ready</h1>
+    <p id="setup-msg" class="muted"></p>
+    <ol class="steps">
+      <li>In Vercel, open this project → <b>Settings → Environment Variables</b>.</li>
+      <li>Add <code>ADMIN_PASSWORD</code> with a password only you know.</li>
+      <li>Under <b>Storage</b>, connect an <b>Upstash for Redis</b> database (free tier is fine).</li>
+      <li>Redeploy, then reload this page.</li>
+    </ol>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand"><span class="logo">D</span> Demo Visits</div>
+      <div class="controls">
+        <label class="sr" for="site">Demo</label>
+        <select id="site"></select>
+        <div class="seg" role="group" aria-label="Time range">
+          <button data-range="1">24h</button><button data-range="7" class="on">7 days</button><button data-range="30">30 days</button><button data-range="0">All</button>
+        </div>
+        <button class="btn ghost" id="refresh" title="Refresh">↻</button>
+        <button class="btn ghost" id="logout">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="banner" class="banner" hidden></div>
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="grid">
+      <section class="card span2">
+        <div class="card-head">
+          <h2>Who opened it</h2>
+          <span class="muted small" id="updated"></span>
+        </div>
+        <div id="visitors"></div>
+      </section>
+
+      <aside class="col">
+        <section class="card">
+          <div class="card-head"><h2>Tracked links</h2></div>
+          <p class="muted small">Make one link per person you send the demo to. Their visits will show up with their name.</p>
+          <form id="link-form" class="link-form">
+            <input name="label" placeholder="Who is it for? e.g. Jonathan Pace" required maxlength="60">
+            <input name="note" placeholder="Note (optional), e.g. sent by text Oct 21" maxlength="200">
+            <input name="target" placeholder="Demo address" required>
+            <button class="btn primary" type="submit">Create link</button>
+            <p class="error small" id="link-error" role="alert"></p>
+          </form>
+          <div id="links"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Where from</h2></div>
+          <div id="places"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Don't count yourself</h2></div>
+          <p class="muted small">Open the demo once on each of your own phones and computers with <code>?notrack=1</code> at the end of the address. That browser stops being counted.</p>
+          <p class="small" id="notrack-link"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Latest activity</h2></div>
+      <div id="feed"></div>
+    </section>
+
+    <footer class="foot muted small">
+      <span id="mode"></span>
+      <button class="link danger" id="clear">Delete all visits for this demo…</button>
+    </footer>
+  </main>
+</div>
+<script src="/app.js" type="module"></script>
+</body>
+</html>
