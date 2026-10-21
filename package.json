@@ -9,5 +9,10 @@
     "dev": "node dev.mjs",
     "test": "node --test tests/*.test.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.2"
+  }
 }

@@ -19,7 +19,9 @@ Location comes from Vercel's own edge headers (`x-vercel-ip-city`, region, count
 ## Set up on Vercel (about 5 minutes)
 
 1. **Import the repo.** vercel.com → Add New → Project → import `demo-visits`. No framework, no build settings to change.
-2. **Add a database.** In the new project: Storage → Connect Database → **Upstash for Redis** (the free plan is plenty). Connect it to this project for Production and Preview. That adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically.
+2. **Add storage.** Either one works; Redis wins if both are connected.
+   - **Vercel Blob** (what this project uses now): a private Blob store connected to the project adds `BLOB_READ_WRITE_TOKEN`. The demo sends one batch per page viewed, and the dashboard reuses a read for a minute, to stay inside the Hobby plan's 2,000 writes a month. If that limit is ever hit, Vercel pauses Blob for 30 days, so for heavier use switch to Redis.
+   - **Upstash for Redis**: Storage → Connect Database → Upstash for Redis (free plan: about 500,000 commands a month). Adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
 3. **Set a password.** Settings → Environment Variables → `ADMIN_PASSWORD` = a password only you know.
 4. **Optional:** `IP_SALT` (any long random text) and `ALLOWED_ORIGINS` (comma-separated demo addresses, e.g. `https://pace-plumbing-houston.vercel.app`) so only your demos can send visits.
 5. **Redeploy** (Deployments → ⋯ → Redeploy) and open the project's address. Sign in with your password.

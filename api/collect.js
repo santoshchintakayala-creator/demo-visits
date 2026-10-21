@@ -1,4 +1,5 @@
 // Receives beacons from demo sites (navigator.sendBeacon, text/plain JSON).
+import { randomUUID } from 'node:crypto';
 import { send, readJson, header, clientIp, geo, networkId, isBot, device, cleanSite, text } from '../lib/http.mjs';
 import { addEvent, underLimit } from '../lib/store.mjs';
 
@@ -16,6 +17,11 @@ function originAllowed(req) {
   return !origin || allowed.includes(origin);
 }
 
+function clean(event) {
+  for (const key of Object.keys(event)) if (event[key] === undefined || event[key] === '') delete event[key];
+  return event;
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return send(res, 204, '', { ...corsHeaders(req), 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' });
@@ -27,16 +33,20 @@ export default async function handler(req, res) {
   const ua = header(req, 'user-agent');
   if (isBot(ua)) return send(res, 204, '', cors);
 
-  const b = await readJson(req, 8 * 1024);
-  const site = cleanSite(b?.site);
-  if (!b || !site || !TYPES.has(b.type)) return send(res, 400, { error: 'bad event' }, cors);
+  const body = await readJson(req, 64 * 1024);
+  const items = Array.isArray(body?.batch) ? body.batch.slice(0, 60) : body ? [body] : [];
+  const site = cleanSite(items[0]?.site);
+  const valid = items.filter((b) => b && cleanSite(b.site) === site && TYPES.has(b.type));
+  if (!site || !valid.length) return send(res, 400, { error: 'bad event' }, cors);
 
   const ip = clientIp(req);
   const net = networkId(ip);
   if (!(await underLimit(`c:${net}`, 240, 60))) return send(res, 429, { error: 'slow down' }, cors);
 
-  const event = {
-    t: Date.now(),
+  const where = geo(req), dev = device(ua), now = Date.now();
+  const events = valid.map((b, i) => clean({
+    id: randomUUID().replace(/-/g, '').slice(0, 16),
+    t: Number.isFinite(b.ts) && Math.abs(b.ts - now) < 6 * 3600 * 1000 ? Math.round(b.ts) : now + i,
     type: b.type,
     vid: text(b.vid, 32),
     sid: text(b.sid, 32),
@@ -54,14 +64,13 @@ export default async function handler(req, res) {
     screen: Number.isFinite(b.w) && Number.isFinite(b.h) ? `${Math.round(b.w)}x${Math.round(b.h)}` : '',
     tz: text(b.tz, 48),
     lang: text(b.lang, 24),
-    geo: geo(req),
-    dev: device(ua),
+    geo: where,
+    dev,
     net
-  };
-  for (const key of Object.keys(event)) if (event[key] === undefined || event[key] === '') delete event[key];
+  }));
 
   try {
-    await addEvent(site, event);
+    await addEvent(site, events);
   } catch (err) {
     console.error('collect: store failed', err.message);
     return send(res, 503, { error: 'storage unavailable' }, cors);

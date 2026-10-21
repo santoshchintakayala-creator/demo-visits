@@ -100,3 +100,22 @@ test('tracked links: readable codes, url carries ?r=, needs sign-in', async () =
   const badTarget = res(); await links(req('POST', '/api/links', { label: 'x', site: 's', target: 'javascript:alert(1)' }, { cookie }), badTarget);
   assert.equal(badTarget.status, 400);
 });
+
+test('a batch of events from one page is stored together with shared location', async () => {
+  const cookie = authCookie().split(';')[0];
+  const site = 'batch-site';
+  const r = res();
+  await collect(req('POST', '/api/collect', { batch: [
+    { site, type: 'view', vid: 'b1', sid: 's', path: '/', ts: Date.now() - 3000 },
+    { site, type: 'click', vid: 'b1', sid: 's', path: '/', label: 'Ask Pace', to: '', ts: Date.now() - 2000 },
+    { site, type: 'leave', vid: 'b1', sid: 's', path: '/', ms: 2500, ts: Date.now() - 1000 },
+    { site: 'other-site', type: 'view' }
+  ] }, { 'user-agent': UA, 'x-vercel-ip-city': 'Katy', 'x-forwarded-for': '192.0.2.4' }), r);
+  assert.equal(r.status, 204);
+  const out = res();
+  await data(req('GET', `/api/data?site=${site}`, undefined, { cookie }), out);
+  const ev = out.json().events;
+  assert.equal(ev.length, 3);
+  assert.deepEqual(ev.map((e) => e.type).sort(), ['click', 'leave', 'view']);
+  assert.ok(ev.every((e) => e.geo.city === 'Katy' && e.id));
+});

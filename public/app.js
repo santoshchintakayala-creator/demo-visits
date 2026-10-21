@@ -232,8 +232,11 @@ function render() {
 }
 
 // ---------- loading & auth ----------
-async function load() {
-  const q = state.site ? `?site=${encodeURIComponent(state.site)}` : '';
+async function load(fresh = false) {
+  const params = new URLSearchParams();
+  if (state.site) params.set('site', state.site);
+  if (fresh) params.set('fresh', '1');
+  const q = params.toString() ? `?${params}` : '';
   let res;
   try { res = await fetch(`/api/data${q}`, { credentials: 'same-origin' }); } catch { return; }
   if (res.status === 401) return show('login');
@@ -249,7 +252,7 @@ async function load() {
 function show(which) {
   for (const id of ['login', 'setup', 'app']) $(`#${id}`).hidden = id !== which;
   clearInterval(state.timer);
-  if (which === 'app') state.timer = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 30000);
+  if (which === 'app') state.timer = setInterval(() => { if (document.visibilityState === 'visible') load(); }, state.data?.mode === 'blob' ? 120000 : 30000);
 }
 
 $('#login-form').addEventListener('submit', async (e) => {
@@ -264,7 +267,7 @@ $('#login-form').addEventListener('submit', async (e) => {
 });
 
 $('#logout').addEventListener('click', async () => { await fetch('/api/login', { method: 'DELETE' }); state.data = null; show('login'); });
-$('#refresh').addEventListener('click', load);
+$('#refresh').addEventListener('click', () => load(true));
 $('#site').addEventListener('change', (e) => { state.site = e.target.value; try { localStorage.setItem('dv-site', state.site); } catch {} state.open.clear(); $('#link-form [name=target]').value = ''; load(); });
 document.querySelector('.seg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
